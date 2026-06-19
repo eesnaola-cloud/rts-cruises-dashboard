@@ -238,6 +238,17 @@
     </table>
   </div>
 
+  <h2 class="section-title" style="margin-top:36px;">Ranking de agencias vendedoras <span class="section-sub">— criterio: reserva · fuente: MasterSheet, columna V</span></h2>
+
+  <div class="panel">
+    <table id="tablaAgencias">
+      <thead>
+        <tr><th>Agencia</th><th class="num">Ventas únicas</th><th class="num">Neto agencia</th><th class="num">Neto RTS</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
 </div>
 
 <script>
@@ -365,7 +376,9 @@ async function loadData() {
 
     // índices de columnas clave (según encabezados de la planilla)
     const idx = {
-      date: 0, company: 1, booking: 2, ship: 3, guest1: 9, guest2: 10, netoRts: 25, // columna Z (0-based = 25)
+      date: 0, company: 1, booking: 2, ship: 3, guest1: 9, guest2: 10,
+      agencia: 21, comisionAgencia: 23, // columnas V y X
+      netoRts: 25, // columna Z (0-based = 25)
     };
 
     let filasSinBooking = 0;
@@ -386,6 +399,8 @@ async function loadData() {
         company: get(idx.company),
         booking,
         ship: get(idx.ship),
+        agencia: get(idx.agencia) ? String(get(idx.agencia)).trim() : null,
+        comisionAgencia: parseEsNumber(get(idx.comisionAgencia)),
         netoRts: parseEsNumber(get(idx.netoRts)),
       };
     }).filter(r => r.booking && r.date);
@@ -599,6 +614,25 @@ async function loadData() {
         <td class="num">$ ${fmtMoney(DATA_2025.scenicEmerald[m])}</td><td class="num">$ ${fmtMoney(DATA_2026_COBRADO.scenicEmerald[m])}</td>
         <td class="num">$ ${fmtMoney(DATA_2025.otras[m])}</td><td class="num">$ ${fmtMoney(DATA_2026_COBRADO.otras[m])}</td>`;
       tbodyMensual.appendChild(tr);
+    }
+
+    // Ranking de agencias vendedoras (columna V "AGENCIA" del MasterSheet, criterio reserva, deduplicado por Booking #)
+    const byAgencia = new Map();
+    for (const r of ytd) {
+      if (!r.agencia) continue;
+      if (!byAgencia.has(r.agencia)) byAgencia.set(r.agencia, { count: 0, comisionAgencia: 0, netoRts: 0 });
+      const o = byAgencia.get(r.agencia);
+      o.count += 1;
+      o.comisionAgencia += r.comisionAgencia;
+      o.netoRts += r.netoRts;
+    }
+    const agencias = Array.from(byAgencia.entries()).sort((a, b) => b[1].count - a[1].count);
+    const tbodyAgencias = document.querySelector("#tablaAgencias tbody");
+    tbodyAgencias.innerHTML = "";
+    for (const [name, d] of agencias) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${name}</td><td class="num">${d.count}</td><td class="num">$ ${fmtMoney(d.comisionAgencia)}</td><td class="num">$ ${fmtMoney(d.netoRts)}</td>`;
+      tbodyAgencias.appendChild(tr);
     }
 
     document.getElementById("status").textContent = "actualizado " + new Date().toLocaleString("es-AR");
