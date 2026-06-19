@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RTS Cruises — Tablero de Control</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root{
+    --bg:#0b1220;
+    --panel:#121b2e;
+    --panel2:#16213a;
+    --border:#243049;
+    --text:#e8edf7;
+    --muted:#94a3c4;
+    --accent:#3aa0ff;
+    --accent2:#22d3a8;
+    --bad:#ff5d6c;
+    --good:#22d3a8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 10% -10%, #1a2740 0%, var(--bg) 55%);
+    color:var(--text);
+    padding:32px 24px 60px;
+  }
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:16px;
+    max-width:1280px;
+    margin:0 auto 28px;
+  }
+  header h1{
+    margin:0;
+    font-size:28px;
+    letter-spacing:.3px;
+  }
+  header p{margin:4px 0 0;color:var(--muted);font-size:14px;}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  button{
+    background:var(--accent);
+    color:#06121f;
+    border:none;
+    padding:10px 16px;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+    font-size:13px;
+  }
+  button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+  #status{font-size:12px;color:var(--muted);}
+  .wrap{max-width:1280px;margin:0 auto;}
+  .kpis{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:16px;
+    margin-bottom:20px;
+  }
+  .card{
+    background:linear-gradient(180deg,var(--panel) 0%, var(--panel2) 100%);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:20px;
+  }
+  .card .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+  .card .value{font-size:32px;font-weight:700;margin-top:8px;}
+  .card .delta{font-size:13px;margin-top:6px;font-weight:600;}
+  .delta.up{color:var(--good);}
+  .delta.down{color:var(--bad);}
+  .yoy-input{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+    align-items:center;
+  }
+  .yoy-input input{
+    width:100%;
+    background:#0c1424;
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:8px 10px;
+    border-radius:8px;
+    font-size:13px;
+  }
+  .yoy-input label{font-size:11px;color:var(--muted);white-space:nowrap;}
+  .grid2{
+    display:grid;
+    grid-template-columns:1.1fr .9fr;
+    gap:16px;
+    margin-bottom:20px;
+  }
+  @media (max-width:900px){.grid2{grid-template-columns:1fr;}}
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:20px;
+  }
+  .panel h2{margin:0 0 14px;font-size:15px;color:var(--text);}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;}
+  tr:hover td{background:rgba(255,255,255,.02);}
+  .num{text-align:right;font-variant-numeric:tabular-nums;}
+  canvas{max-height:340px;}
+  #error{
+    display:none;
+    background:#3a1320;
+    border:1px solid var(--bad);
+    color:#ffb3bb;
+    padding:14px 16px;
+    border-radius:10px;
+    margin-bottom:20px;
+    font-size:13px;
+    max-width:1280px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>RTS Cruises — Tablero de Control</h1>
+    <p>Reservas tomadas en vivo desde Google Sheets · <span id="status">cargando…</span></p>
+  </div>
+  <div class="controls">
+    <button class="secondary" onclick="loadData()">↻ Actualizar</button>
+  </div>
+</header>
+
+<div id="error"></div>
+
+<div class="wrap">
+
+  <div class="kpis">
+    <div class="card">
+      <div class="label">Reservas únicas YTD</div>
+      <div class="value" id="kpi-reservas">—</div>
+      <div class="delta" id="kpi-reservas-delta"></div>
+    </div>
+    <div class="card">
+      <div class="label">NETO RTS acumulado YTD</div>
+      <div class="value" id="kpi-neto">—</div>
+      <div class="yoy-input">
+        <label for="lastYearNeto">NETO RTS año pasado (mismo corte):</label>
+        <input id="lastYearNeto" type="number" placeholder="Ingresar valor manual" />
+      </div>
+      <div class="delta" id="kpi-neto-delta"></div>
+    </div>
+    <div class="card">
+      <div class="label">Naviera líder (por NETO RTS)</div>
+      <div class="value" id="kpi-top-naviera" style="font-size:22px;">—</div>
+      <div class="delta" id="kpi-top-naviera-sub" style="color:var(--muted);"></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>Reservas únicas por naviera (YTD)</h2>
+      <canvas id="chartReservasNaviera"></canvas>
+    </div>
+    <div class="panel">
+      <h2>NETO RTS por naviera (YTD)</h2>
+      <canvas id="chartNetoNaviera"></canvas>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Detalle por naviera</h2>
+    <table id="tablaNavieras">
+      <thead>
+        <tr><th>Naviera</th><th class="num">Reservas únicas</th><th class="num">NETO RTS</th><th class="num">% del total</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="panel" style="margin-top:16px;">
+    <h2>NETO RTS mensual — 2025 vs 2026</h2>
+    <canvas id="chartMensualTotal"></canvas>
+  </div>
+
+  <div class="grid2" style="margin-top:16px;">
+    <div class="panel">
+      <h2>NETO RTS mensual por grupo de naviera (2026)</h2>
+      <canvas id="chartMensualGrupo2026"></canvas>
+    </div>
+    <div class="panel">
+      <h2>Comparación mensual por grupo (2025 vs 2026)</h2>
+      <table id="tablaMensualGrupo">
+        <thead>
+          <tr><th>Mes</th><th class="num">SSC/Silversea '25</th><th class="num">SSC/Silversea '26</th><th class="num">Scenic/Emerald '25</th><th class="num">Scenic/Emerald '26</th><th class="num">Otras '25</th><th class="num">Otras '26</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p style="color:var(--muted);font-size:11px;margin-top:10px;">"Otras" 2025 = Ponant + Crystal + Dawe Yacht + MSC. "Otras" 2026 = Ponant, Crystal, Riverside, Explora Journeys y demás navieras no agrupadas arriba — la composición puede no ser idéntica a 2025.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SHEET_ID = "1v1XNAhn6V22RO_F872uCIj9llS1EbX59DbF24gqFqlc";
+const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+
+const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+// Datos 2025 cargados desde "Ingresos 2025 de Navieras.xlsx" (NETO mensual por grupo de naviera)
+const DATA_2025 = {
+  ssc:      [17986.2, 1464,  15581, 5942,  11957, 22050, 0, 62931, 5824, 2696, 3947, 7718],
+  scenicEmerald: [1387, 0,    365,   1002,  0,     0,     0, 0,     554,  1327, 0,    5378],
+  otras:    [1081,    0,     1072,  1798,  110,   1073,  0, 0,     490,  0,    1971, 1500],
+  total:    [20454.2, 1464,  17018, 8742,  12067, 23123, 0, 62931, 6868, 4023, 5918, 14596],
+};
+
+// Mapeo de nombres de COMPANY (tal como aparecen en la planilla) a naviera canónica
+const NAVIERA_MAP = [
+  [/silversea/i, "Silversea"],
+  [/scenic/i, "Scenic"],
+  [/crystal/i, "Crystal"],
+  [/emerald/i, "Emerald"],
+  [/riverside/i, "Riverside"],
+  [/explora/i, "Explora Journeys"],
+  [/viking/i, "Viking"],
+  [/ponant/i, "Ponant"],
+  [/paul gauguin/i, "Paul Gauguin"],
+  [/ritz/i, "Ritz Carlton"],
+  [/acqua/i, "Acqua Expeditions"],
+  [/uniworld/i, "Uniworld"],
+  [/msc/i, "MSC"],
+];
+
+function normalizeNaviera(raw) {
+  if (!raw) return "Sin dato";
+  for (const [re, name] of NAVIERA_MAP) if (re.test(raw)) return name;
+  return raw.trim();
+}
+
+// Agrupación para comparar contra los 3 grupos del Excel 2025
+function naveiraGroup(raw) {
+  if (!raw) return "otras";
+  if (/silversea/i.test(raw)) return "ssc";
+  if (/scenic|emerald/i.test(raw)) return "scenicEmerald";
+  return "otras";
+}
+
+function parseEsNumber(v) {
+  if (v === null || v === undefined || v === "") return 0;
+  if (typeof v === "number") return v;
+  let s = String(v).trim();
+  s = s.replace(/\#REF\!|\#N\/A/gi, "");
+  if (!s) return 0;
+  s = s.replace(/\./g, "").replace(",", ".");
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function parseDate(raw) {
+  if (!raw) return null;
+  if (raw instanceof Date) return raw;
+  const s = String(raw).trim();
+  // formato gviz: "Date(2026,0,20,21,34,0)" (mes 0-based)
+  const g = s.match(/^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)$/);
+  if (g) {
+    const [, y, mo, d, h, mi, se] = g.map(Number);
+    return new Date(y, mo, d, h || 0, mi || 0, se || 0);
+  }
+  // formato texto: "20/01/2026 21:34"
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) {
+    const [, d, mo, y] = m;
+    return new Date(parseInt(y), parseInt(mo) - 1, parseInt(d));
+  }
+  const d2 = new Date(s);
+  return isNaN(d2) ? null : d2;
+}
+
+function fmtMoney(n) {
+  return n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
+}
+
+function showError(msg) {
+  const el = document.getElementById("error");
+  el.style.display = "block";
+  el.innerHTML = msg;
+}
+function hideError() {
+  document.getElementById("error").style.display = "none";
+}
+
+let chartReservas, chartNeto;
+
+async function loadData() {
+  document.getElementById("status").textContent = "cargando…";
+  hideError();
+  try {
+    const res = await fetch(GVIZ_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const text = await res.text();
+    const json = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
+    const cols = json.table.cols.map(c => c.label || c.id);
+    const rows = json.table.rows;
+
+    // índices de columnas clave (según encabezados de la planilla)
+    const idx = {
+      date: 0, company: 1, booking: 2, ship: 3, netoRts: 25, // columna Z (0-based = 25)
+    };
+
+    const parsed = rows.map(r => {
+      const c = r.c;
+      const get = i => (c[i] ? c[i].v : null);
+      return {
+        date: parseDate(get(idx.date)),
+        company: get(idx.company),
+        booking: get(idx.booking) ? String(get(idx.booking)).trim() : null,
+        ship: get(idx.ship),
+        netoRts: parseEsNumber(get(idx.netoRts)),
+      };
+    }).filter(r => r.booking && r.date);
+
+    // Dedupe por Booking #: nos quedamos con la fila más reciente (último estado) de cada reserva
+    const byBooking = new Map();
+    for (const r of parsed) {
+      const prev = byBooking.get(r.booking);
+      if (!prev || r.date > prev.date) byBooking.set(r.booking, r);
+    }
+    const unique = Array.from(byBooking.values());
+
+    // Filtro YTD: año actual, desde 1/1 hasta hoy
+    const now = new Date();
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+    const ytd = unique.filter(r => r.date >= yearStart && r.date <= now);
+
+    // KPI 1: reservas únicas YTD
+    document.getElementById("kpi-reservas").textContent = ytd.length.toLocaleString("es-AR");
+
+    // KPI 2: NETO RTS acumulado YTD
+    const netoTotal = ytd.reduce((s, r) => s + r.netoRts, 0);
+    document.getElementById("kpi-neto").textContent = "$ " + fmtMoney(netoTotal);
+
+    // Comparación año pasado: se autocompleta con el acumulado 2025 hasta el mismo mes (Excel),
+    // pero el usuario puede sobreescribirlo a mano si tiene un corte más preciso.
+    const lastYearInput = document.getElementById("lastYearNeto");
+    const currentMonthIdx = now.getMonth(); // 0-based
+    const autoLastYear = DATA_2025.total.slice(0, currentMonthIdx + 1).reduce((s, v) => s + v, 0);
+    const savedOverride = localStorage.getItem("rts_neto_anio_pasado_override");
+    if (savedOverride) lastYearInput.value = savedOverride;
+    else { lastYearInput.value = Math.round(autoLastYear); lastYearInput.placeholder = "Auto (Excel 2025): " + fmtMoney(autoLastYear); }
+    function updateDelta() {
+      const ly = parseFloat(lastYearInput.value);
+      const deltaEl = document.getElementById("kpi-neto-delta");
+      if (!ly || isNaN(ly)) { deltaEl.textContent = ""; return; }
+      localStorage.setItem("rts_neto_anio_pasado_override", lastYearInput.value);
+      const diff = netoTotal - ly;
+      const pct = (diff / ly) * 100;
+      deltaEl.className = "delta " + (diff >= 0 ? "up" : "down");
+      deltaEl.textContent = (diff >= 0 ? "▲ " : "▼ ") + Math.abs(pct).toFixed(1) + "% vs año pasado ($ " + fmtMoney(ly) + ")";
+    }
+    lastYearInput.oninput = updateDelta;
+    updateDelta();
+
+    // Agrupación por naviera
+    const byNaviera = new Map();
+    for (const r of ytd) {
+      const n = normalizeNaviera(r.company);
+      if (!byNaviera.has(n)) byNaviera.set(n, { count: 0, neto: 0 });
+      const o = byNaviera.get(n);
+      o.count += 1;
+      o.neto += r.netoRts;
+    }
+    const naviereas = Array.from(byNaviera.entries()).sort((a, b) => b[1].neto - a[1].neto);
+
+    // KPI 3: naviera líder
+    if (naviereas.length) {
+      const [topName, topData] = naviereas[0];
+      document.getElementById("kpi-top-naviera").textContent = topName;
+      document.getElementById("kpi-top-naviera-sub").textContent =
+        topData.count + " reservas · $ " + fmtMoney(topData.neto) + " NETO RTS";
+    }
+
+    // Tabla
+    const tbody = document.querySelector("#tablaNavieras tbody");
+    tbody.innerHTML = "";
+    for (const [name, d] of naviereas) {
+      const pct = netoTotal ? (d.neto / netoTotal) * 100 : 0;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${name}</td><td class="num">${d.count}</td><td class="num">$ ${fmtMoney(d.neto)}</td><td class="num">${pct.toFixed(1)}%</td>`;
+      tbody.appendChild(tr);
+    }
+
+    // Charts
+    const labels = naviereas.map(([n]) => n);
+    const counts = naviereas.map(([, d]) => d.count);
+    const netos = naviereas.map(([, d]) => d.neto);
+    const palette = ["#3aa0ff","#22d3a8","#ffb84d","#ff5d6c","#a78bfa","#34d399","#f472b6","#60a5fa","#fbbf24","#4ade80"];
+
+    if (chartReservas) chartReservas.destroy();
+    chartReservas = new Chart(document.getElementById("chartReservasNaviera"), {
+      type: "doughnut",
+      data: { labels, datasets: [{ data: counts, backgroundColor: palette, borderColor: "#0b1220", borderWidth: 2 }] },
+      options: { plugins: { legend: { position: "right", labels: { color: "#e8edf7", boxWidth: 12, font: { size: 11 } } } } }
+    });
+
+    if (chartNeto) chartNeto.destroy();
+    chartNeto = new Chart(document.getElementById("chartNetoNaviera"), {
+      type: "bar",
+      data: { labels, datasets: [{ label: "NETO RTS", data: netos, backgroundColor: "#3aa0ff", borderRadius: 6 }] },
+      options: {
+        indexAxis: "y",
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: "#94a3c4" }, grid: { color: "#243049" } },
+          y: { ticks: { color: "#e8edf7" }, grid: { display: false } }
+        }
+      }
+    });
+
+    // --- Comparación mensual 2025 vs 2026 ---
+    // Solo se consideran reservas con fecha en 2026 (único año con datos en la planilla por ahora)
+    const monthly2026 = { ssc: Array(12).fill(0), scenicEmerald: Array(12).fill(0), otras: Array(12).fill(0), total: Array(12).fill(0) };
+    for (const r of unique) {
+      if (r.date.getFullYear() !== now.getFullYear()) continue;
+      const m = r.date.getMonth();
+      const g = naveiraGroup(r.company);
+      monthly2026[g][m] += r.netoRts;
+      monthly2026.total[m] += r.netoRts;
+    }
+    // No mostramos meses futuros del año en curso para no confundir con "cero ventas"
+    const lastDataMonth = now.getMonth();
+    const totalChartLabels = MESES.slice(0, lastDataMonth + 1);
+
+    if (window._chartMensualTotal) window._chartMensualTotal.destroy();
+    window._chartMensualTotal = new Chart(document.getElementById("chartMensualTotal"), {
+      type: "line",
+      data: {
+        labels: MESES,
+        datasets: [
+          { label: "2025", data: DATA_2025.total, borderColor: "#94a3c4", backgroundColor: "transparent", borderDash: [5, 4], tension: .3 },
+          { label: "2026", data: monthly2026.total.map((v, i) => i <= lastDataMonth ? v : null), borderColor: "#3aa0ff", backgroundColor: "rgba(58,160,255,.15)", fill: true, tension: .3 }
+        ]
+      },
+      options: {
+        plugins: { legend: { labels: { color: "#e8edf7" } } },
+        scales: {
+          x: { ticks: { color: "#94a3c4" }, grid: { color: "#243049" } },
+          y: { ticks: { color: "#94a3c4" }, grid: { color: "#243049" } }
+        }
+      }
+    });
+
+    if (window._chartMensualGrupo2026) window._chartMensualGrupo2026.destroy();
+    window._chartMensualGrupo2026 = new Chart(document.getElementById("chartMensualGrupo2026"), {
+      type: "bar",
+      data: {
+        labels: totalChartLabels,
+        datasets: [
+          { label: "SSC/Silversea", data: monthly2026.ssc.slice(0, lastDataMonth + 1), backgroundColor: "#3aa0ff" },
+          { label: "Scenic/Emerald", data: monthly2026.scenicEmerald.slice(0, lastDataMonth + 1), backgroundColor: "#22d3a8" },
+          { label: "Otras", data: monthly2026.otras.slice(0, lastDataMonth + 1), backgroundColor: "#ffb84d" },
+        ]
+      },
+      options: {
+        plugins: { legend: { labels: { color: "#e8edf7" } } },
+        scales: {
+          x: { stacked: true, ticks: { color: "#94a3c4" }, grid: { display: false } },
+          y: { stacked: true, ticks: { color: "#94a3c4" }, grid: { color: "#243049" } }
+        }
+      }
+    });
+
+    const tbodyMensual = document.querySelector("#tablaMensualGrupo tbody");
+    tbodyMensual.innerHTML = "";
+    for (let m = 0; m <= lastDataMonth; m++) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${MESES[m]}</td>
+        <td class="num">$ ${fmtMoney(DATA_2025.ssc[m])}</td><td class="num">$ ${fmtMoney(monthly2026.ssc[m])}</td>
+        <td class="num">$ ${fmtMoney(DATA_2025.scenicEmerald[m])}</td><td class="num">$ ${fmtMoney(monthly2026.scenicEmerald[m])}</td>
+        <td class="num">$ ${fmtMoney(DATA_2025.otras[m])}</td><td class="num">$ ${fmtMoney(monthly2026.otras[m])}</td>`;
+      tbodyMensual.appendChild(tr);
+    }
+
+    document.getElementById("status").textContent = "actualizado " + new Date().toLocaleString("es-AR");
+  } catch (err) {
+    console.error(err);
+    showError(
+      "No se pudo cargar la planilla. Verificá que el Google Sheet esté compartido como " +
+      "<b>“Cualquier persona con el enlace puede ver”</b> (Compartir → Acceso general). " +
+      "<br>Detalle técnico: " + err.message
+    );
+    document.getElementById("status").textContent = "error al cargar";
+  }
+}
+
+loadData();
+</script>
+
+</body>
+</html>
