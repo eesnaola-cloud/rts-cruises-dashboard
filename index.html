@@ -146,13 +146,14 @@
       <div class="delta" id="kpi-reservas-delta"></div>
     </div>
     <div class="card">
-      <div class="label">NETO RTS acumulado YTD</div>
+      <div class="label">NETO RTS cobrado YTD <span id="kpi-neto-corte" style="text-transform:none;color:var(--muted);"></span></div>
       <div class="value" id="kpi-neto">—</div>
       <div class="yoy-input">
-        <label for="lastYearNeto">NETO RTS año pasado (mismo corte):</label>
-        <input id="lastYearNeto" type="number" placeholder="Ingresar valor manual" />
+        <label for="lastYearNeto">NETO RTS cobrado año pasado (mismo corte):</label>
+        <input id="lastYearNeto" type="number" placeholder="Auto desde Excel 2025" />
       </div>
       <div class="delta" id="kpi-neto-delta"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">Criterio: comisión cobrada (no reserva) — fuente: Excel mensual de cierre, no el Sheet en vivo.</div>
     </div>
     <div class="card">
       <div class="label">Naviera líder (por NETO RTS)</div>
@@ -163,17 +164,17 @@
 
   <div class="grid2">
     <div class="panel">
-      <h2>Reservas únicas por naviera (YTD)</h2>
+      <h2>Reservas únicas por naviera (YTD) <span style="color:var(--muted);font-weight:400;font-size:12px;">— criterio: reserva, en vivo</span></h2>
       <canvas id="chartReservasNaviera"></canvas>
     </div>
     <div class="panel">
-      <h2>NETO RTS por naviera (YTD)</h2>
+      <h2>NETO RTS por naviera (YTD) <span style="color:var(--muted);font-weight:400;font-size:12px;">— criterio: reserva, en vivo</span></h2>
       <canvas id="chartNetoNaviera"></canvas>
     </div>
   </div>
 
   <div class="panel">
-    <h2>Detalle por naviera</h2>
+    <h2>Detalle por naviera <span style="color:var(--muted);font-weight:400;font-size:12px;">— criterio: reserva, en vivo</span></h2>
     <table id="tablaNavieras">
       <thead>
         <tr><th>Naviera</th><th class="num">Reservas únicas</th><th class="num">NETO RTS</th><th class="num">% del total</th></tr>
@@ -183,24 +184,24 @@
   </div>
 
   <div class="panel" style="margin-top:16px;">
-    <h2>NETO RTS mensual — 2025 vs 2026</h2>
+    <h2>NETO RTS mensual — 2025 vs 2026 <span style="color:var(--muted);font-weight:400;font-size:12px;">— criterio: comisión cobrada</span></h2>
     <canvas id="chartMensualTotal"></canvas>
   </div>
 
   <div class="grid2" style="margin-top:16px;">
     <div class="panel">
-      <h2>NETO RTS mensual por grupo de naviera (2026)</h2>
+      <h2>NETO RTS mensual por grupo de naviera (2026) <span style="color:var(--muted);font-weight:400;font-size:12px;">— cobrado</span></h2>
       <canvas id="chartMensualGrupo2026"></canvas>
     </div>
     <div class="panel">
-      <h2>Comparación mensual por grupo (2025 vs 2026)</h2>
+      <h2>Comparación mensual por grupo (2025 vs 2026) <span style="color:var(--muted);font-weight:400;font-size:12px;">— cobrado</span></h2>
       <table id="tablaMensualGrupo">
         <thead>
           <tr><th>Mes</th><th class="num">SSC/Silversea '25</th><th class="num">SSC/Silversea '26</th><th class="num">Scenic/Emerald '25</th><th class="num">Scenic/Emerald '26</th><th class="num">Otras '25</th><th class="num">Otras '26</th></tr>
         </thead>
         <tbody></tbody>
       </table>
-      <p style="color:var(--muted);font-size:11px;margin-top:10px;">"Otras" 2025 = Ponant + Crystal + Dawe Yacht + MSC. "Otras" 2026 = Ponant, Crystal, Riverside, Explora Journeys y demás navieras no agrupadas arriba — la composición puede no ser idéntica a 2025.</p>
+      <p style="color:var(--muted);font-size:11px;margin-top:10px;">"Otras" 2025 = Ponant + Crystal + Dawe Yacht + MSC. "Otras" 2026 = Ponant, Crystal, Explora Journeys y Vanguard — la composición puede no ser idéntica a 2025.</p>
     </div>
   </div>
 
@@ -212,13 +213,29 @@ const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx
 
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
-// Datos 2025 cargados desde "Ingresos 2025 de Navieras.xlsx" (NETO mensual por grupo de naviera)
+// Ambos bloques de datos usan el criterio de "COMISIÓN COBRADA" (cuando se cobra/concilia el pago
+// bancario), NO el criterio de "reserva" (cuando se carga la reserva) que usa el Sheet en vivo.
+// Mezclar ambos criterios distorsiona la comparación interanual, por eso estos números se cargan
+// a mano desde los Excel de cierre mensual en vez de calcularse desde el Sheet de reservas.
+
+// "Ingresos 2025 de Navieras.xlsx" — filas 8 (Neto SSC), 15 (Neto Scenic-Emerald) y 21 (Neto Ponant+Crystal+Dawe Yatch+MSC)
 const DATA_2025 = {
   ssc:      [17986.2, 1464,  15581, 5942,  11957, 22050, 0, 62931, 5824, 2696, 3947, 7718],
   scenicEmerald: [1387, 0,    365,   1002,  0,     0,     0, 0,     554,  1327, 0,    5378],
   otras:    [1081,    0,     1072,  1798,  110,   1073,  0, 0,     490,  0,    1971, 1500],
   total:    [20454.2, 1464,  17018, 8742,  12067, 23123, 0, 62931, 6868, 4023, 5918, 14596],
 };
+
+// "SSC- Comi Claudia 2026.xlsx" — columna J ("Neto RTS") de cada fila "Total [naviera]" por pestaña mensual.
+// Solo están cargados los meses con pestaña cerrada en el archivo (Ene–May 2026). Cuando llegue un mes
+// nuevo, agregar su valor al final de cada array (ssc, scenicEmerald, otras, total) en este mismo orden.
+const DATA_2026_COBRADO = {
+  ssc:           [11025.026, 18096.1,  11617.84, 4014.54,   30351.2292],
+  scenicEmerald: [1908,      3632.8,   3149.5,   1513,      1068],
+  otras:         [0,         2238.17,  0,        5107.1775, 3809.96],
+  total:         [12933.026, 23967.07, 14767.34, 10634.7175, 35229.1892],
+};
+const MESES_COBRADO_DISPONIBLES = DATA_2026_COBRADO.total.length; // cantidad de meses 2026 con dato cobrado cerrado
 
 // Mapeo de nombres de COMPANY (tal como aparecen en la planilla) a naviera canónica
 const NAVIERA_MAP = [
@@ -241,14 +258,6 @@ function normalizeNaviera(raw) {
   if (!raw) return "Sin dato";
   for (const [re, name] of NAVIERA_MAP) if (re.test(raw)) return name;
   return raw.trim();
-}
-
-// Agrupación para comparar contra los 3 grupos del Excel 2025
-function naveiraGroup(raw) {
-  if (!raw) return "otras";
-  if (/silversea/i.test(raw)) return "ssc";
-  if (/scenic|emerald/i.test(raw)) return "scenicEmerald";
-  return "otras";
 }
 
 function parseEsNumber(v) {
@@ -341,15 +350,17 @@ async function loadData() {
     // KPI 1: reservas únicas YTD
     document.getElementById("kpi-reservas").textContent = ytd.length.toLocaleString("es-AR");
 
-    // KPI 2: NETO RTS acumulado YTD
-    const netoTotal = ytd.reduce((s, r) => s + r.netoRts, 0);
-    document.getElementById("kpi-neto").textContent = "$ " + fmtMoney(netoTotal);
+    // KPI 2: NETO RTS cobrado YTD — criterio "comisión cobrada", NO el de reserva del Sheet.
+    // Se calcula 100% desde los Excel de cierre mensual (DATA_2026_COBRADO), hasta el último mes cerrado.
+    const cobradoCutoff = MESES_COBRADO_DISPONIBLES; // cantidad de meses 2026 cargados
+    const netoCobradoTotal = DATA_2026_COBRADO.total.slice(0, cobradoCutoff).reduce((s, v) => s + v, 0);
+    document.getElementById("kpi-neto").textContent = "$ " + fmtMoney(netoCobradoTotal);
+    document.getElementById("kpi-neto-corte").textContent = "(Ene–" + MESES[cobradoCutoff - 1] + " 2026)";
 
-    // Comparación año pasado: se autocompleta con el acumulado 2025 hasta el mismo mes (Excel),
-    // pero el usuario puede sobreescribirlo a mano si tiene un corte más preciso.
+    // Comparación año pasado: se autocompleta con el acumulado 2025 cobrado hasta el mismo corte de mes,
+    // pero el usuario puede sobreescribirlo a mano si tiene un valor más preciso.
     const lastYearInput = document.getElementById("lastYearNeto");
-    const currentMonthIdx = now.getMonth(); // 0-based
-    const autoLastYear = DATA_2025.total.slice(0, currentMonthIdx + 1).reduce((s, v) => s + v, 0);
+    const autoLastYear = DATA_2025.total.slice(0, cobradoCutoff).reduce((s, v) => s + v, 0);
     const savedOverride = localStorage.getItem("rts_neto_anio_pasado_override");
     if (savedOverride) lastYearInput.value = savedOverride;
     else { lastYearInput.value = Math.round(autoLastYear); lastYearInput.placeholder = "Auto (Excel 2025): " + fmtMoney(autoLastYear); }
@@ -358,7 +369,7 @@ async function loadData() {
       const deltaEl = document.getElementById("kpi-neto-delta");
       if (!ly || isNaN(ly)) { deltaEl.textContent = ""; return; }
       localStorage.setItem("rts_neto_anio_pasado_override", lastYearInput.value);
-      const diff = netoTotal - ly;
+      const diff = netoCobradoTotal - ly;
       const pct = (diff / ly) * 100;
       deltaEl.className = "delta " + (diff >= 0 ? "up" : "down");
       deltaEl.textContent = (diff >= 0 ? "▲ " : "▼ ") + Math.abs(pct).toFixed(1) + "% vs año pasado ($ " + fmtMoney(ly) + ")";
@@ -376,6 +387,7 @@ async function loadData() {
       o.neto += r.netoRts;
     }
     const naviereas = Array.from(byNaviera.entries()).sort((a, b) => b[1].neto - a[1].neto);
+    const netoTotalReserva = ytd.reduce((s, r) => s + r.netoRts, 0); // criterio reserva, solo para % de la tabla de desglose
 
     // KPI 3: naviera líder
     if (naviereas.length) {
@@ -389,7 +401,7 @@ async function loadData() {
     const tbody = document.querySelector("#tablaNavieras tbody");
     tbody.innerHTML = "";
     for (const [name, d] of naviereas) {
-      const pct = netoTotal ? (d.neto / netoTotal) * 100 : 0;
+      const pct = netoTotalReserva ? (d.neto / netoTotalReserva) * 100 : 0;
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>${name}</td><td class="num">${d.count}</td><td class="num">$ ${fmtMoney(d.neto)}</td><td class="num">${pct.toFixed(1)}%</td>`;
       tbody.appendChild(tr);
@@ -422,19 +434,10 @@ async function loadData() {
       }
     });
 
-    // --- Comparación mensual 2025 vs 2026 ---
-    // Solo se consideran reservas con fecha en 2026 (único año con datos en la planilla por ahora)
-    const monthly2026 = { ssc: Array(12).fill(0), scenicEmerald: Array(12).fill(0), otras: Array(12).fill(0), total: Array(12).fill(0) };
-    for (const r of unique) {
-      if (r.date.getFullYear() !== now.getFullYear()) continue;
-      const m = r.date.getMonth();
-      const g = naveiraGroup(r.company);
-      monthly2026[g][m] += r.netoRts;
-      monthly2026.total[m] += r.netoRts;
-    }
-    // No mostramos meses futuros del año en curso para no confundir con "cero ventas"
-    const lastDataMonth = now.getMonth();
-    const totalChartLabels = MESES.slice(0, lastDataMonth + 1);
+    // --- Comparación mensual 2025 vs 2026 (criterio: comisión COBRADA, ambos años) ---
+    // 2026 sale de DATA_2026_COBRADO (Excel "SSC- Comi Claudia 2026.xlsx", columna J por pestaña mensual),
+    // NO se recalcula desde el Sheet de reservas para no mezclar criterios.
+    const totalChartLabels = MESES.slice(0, MESES_COBRADO_DISPONIBLES);
 
     if (window._chartMensualTotal) window._chartMensualTotal.destroy();
     window._chartMensualTotal = new Chart(document.getElementById("chartMensualTotal"), {
@@ -443,7 +446,7 @@ async function loadData() {
         labels: MESES,
         datasets: [
           { label: "2025", data: DATA_2025.total, borderColor: "#94a3c4", backgroundColor: "transparent", borderDash: [5, 4], tension: .3 },
-          { label: "2026", data: monthly2026.total.map((v, i) => i <= lastDataMonth ? v : null), borderColor: "#3aa0ff", backgroundColor: "rgba(58,160,255,.15)", fill: true, tension: .3 }
+          { label: "2026", data: DATA_2026_COBRADO.total.map((v, i) => i < MESES_COBRADO_DISPONIBLES ? v : null).concat(Array(12 - MESES_COBRADO_DISPONIBLES).fill(null)), borderColor: "#3aa0ff", backgroundColor: "rgba(58,160,255,.15)", fill: true, tension: .3 }
         ]
       },
       options: {
@@ -461,9 +464,9 @@ async function loadData() {
       data: {
         labels: totalChartLabels,
         datasets: [
-          { label: "SSC/Silversea", data: monthly2026.ssc.slice(0, lastDataMonth + 1), backgroundColor: "#3aa0ff" },
-          { label: "Scenic/Emerald", data: monthly2026.scenicEmerald.slice(0, lastDataMonth + 1), backgroundColor: "#22d3a8" },
-          { label: "Otras", data: monthly2026.otras.slice(0, lastDataMonth + 1), backgroundColor: "#ffb84d" },
+          { label: "SSC/Silversea", data: DATA_2026_COBRADO.ssc, backgroundColor: "#3aa0ff" },
+          { label: "Scenic/Emerald", data: DATA_2026_COBRADO.scenicEmerald, backgroundColor: "#22d3a8" },
+          { label: "Otras", data: DATA_2026_COBRADO.otras, backgroundColor: "#ffb84d" },
         ]
       },
       options: {
@@ -477,12 +480,12 @@ async function loadData() {
 
     const tbodyMensual = document.querySelector("#tablaMensualGrupo tbody");
     tbodyMensual.innerHTML = "";
-    for (let m = 0; m <= lastDataMonth; m++) {
+    for (let m = 0; m < MESES_COBRADO_DISPONIBLES; m++) {
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>${MESES[m]}</td>
-        <td class="num">$ ${fmtMoney(DATA_2025.ssc[m])}</td><td class="num">$ ${fmtMoney(monthly2026.ssc[m])}</td>
-        <td class="num">$ ${fmtMoney(DATA_2025.scenicEmerald[m])}</td><td class="num">$ ${fmtMoney(monthly2026.scenicEmerald[m])}</td>
-        <td class="num">$ ${fmtMoney(DATA_2025.otras[m])}</td><td class="num">$ ${fmtMoney(monthly2026.otras[m])}</td>`;
+        <td class="num">$ ${fmtMoney(DATA_2025.ssc[m])}</td><td class="num">$ ${fmtMoney(DATA_2026_COBRADO.ssc[m])}</td>
+        <td class="num">$ ${fmtMoney(DATA_2025.scenicEmerald[m])}</td><td class="num">$ ${fmtMoney(DATA_2026_COBRADO.scenicEmerald[m])}</td>
+        <td class="num">$ ${fmtMoney(DATA_2025.otras[m])}</td><td class="num">$ ${fmtMoney(DATA_2026_COBRADO.otras[m])}</td>`;
       tbodyMensual.appendChild(tr);
     }
 
