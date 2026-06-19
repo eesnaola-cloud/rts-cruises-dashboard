@@ -70,6 +70,8 @@
   .card .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
   .card .value{font-size:32px;font-weight:700;margin-top:8px;}
   .card .delta{font-size:13px;margin-top:6px;font-weight:600;}
+  .section-title{font-size:18px;margin:8px 0 14px;color:var(--text);}
+  .section-sub{font-size:12px;font-weight:400;color:var(--muted);}
   .delta.up{color:var(--good);}
   .delta.down{color:var(--bad);}
   .yoy-input{
@@ -139,62 +141,63 @@
 
 <div class="wrap">
 
+  <h2 class="section-title">Comisiones cobradas <span class="section-sub">— criterio: comisión cobrada · fuente: Excel de cierre mensual</span></h2>
+
   <div class="kpis">
     <div class="card">
-      <div class="label">Reservas únicas YTD</div>
-      <div class="value" id="kpi-reservas">—</div>
-      <div class="delta" id="kpi-reservas-delta"></div>
-    </div>
-    <div class="card">
-      <div class="label">NETO RTS cobrado YTD <span id="kpi-neto-corte" style="text-transform:none;color:var(--muted);"></span></div>
+      <div class="label">Comisiones cobradas YTD <span id="kpi-neto-corte" style="text-transform:none;color:var(--muted);"></span></div>
       <div class="value" id="kpi-neto">—</div>
       <div class="yoy-input">
-        <label for="lastYearNeto">NETO RTS cobrado año pasado (mismo corte):</label>
+        <label for="lastYearNeto">Cobrado año pasado (mismo corte):</label>
         <input id="lastYearNeto" type="number" placeholder="Auto desde Excel 2025" />
       </div>
       <div class="delta" id="kpi-neto-delta"></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;">Criterio: comisión cobrada (no reserva) — fuente: Excel mensual de cierre, no el Sheet en vivo.</div>
     </div>
     <div class="card">
-      <div class="label">Naviera líder (por NETO RTS)</div>
-      <div class="value" id="kpi-top-naviera" style="font-size:22px;">—</div>
-      <div class="delta" id="kpi-top-naviera-sub" style="color:var(--muted);"></div>
+      <div class="label">Reservas cobradas únicas</div>
+      <div class="value" id="kpi-reservas-cobradas">—</div>
+      <div class="delta" id="kpi-reservas-cobradas-sub" style="color:var(--muted);"></div>
+    </div>
+    <div class="card">
+      <div class="label">Naviera líder (reservas cobradas)</div>
+      <div class="value" id="kpi-top-naviera-cobrado" style="font-size:22px;">—</div>
+      <div class="delta" id="kpi-top-naviera-cobrado-sub" style="color:var(--muted);"></div>
     </div>
   </div>
 
   <div class="grid2">
     <div class="panel">
-      <h2>Reservas únicas por naviera (YTD) <span style="color:var(--muted);font-weight:400;font-size:12px;">— criterio: reserva, en vivo</span></h2>
-      <canvas id="chartReservasNaviera"></canvas>
+      <h2>Reservas cobradas por naviera</h2>
+      <canvas id="chartReservasCobradasNaviera"></canvas>
     </div>
     <div class="panel">
-      <h2>NETO RTS por naviera (YTD) <span style="color:var(--muted);font-weight:400;font-size:12px;">— criterio: reserva, en vivo</span></h2>
-      <canvas id="chartNetoNaviera"></canvas>
+      <h2>Neto cobrado por naviera</h2>
+      <canvas id="chartNetoCobradoNaviera"></canvas>
     </div>
   </div>
 
   <div class="panel">
-    <h2>Detalle por naviera <span style="color:var(--muted);font-weight:400;font-size:12px;">— criterio: reserva, en vivo</span></h2>
-    <table id="tablaNavieras">
+    <h2>Desglose de comisiones cobradas por naviera</h2>
+    <table id="tablaCobradoNavieras">
       <thead>
-        <tr><th>Naviera</th><th class="num">Reservas únicas</th><th class="num">NETO RTS</th><th class="num">% del total</th></tr>
+        <tr><th>Naviera</th><th class="num">Neto cobrado</th><th class="num">Reservas únicas</th><th class="num">% del total</th></tr>
       </thead>
       <tbody></tbody>
     </table>
   </div>
 
   <div class="panel" style="margin-top:16px;">
-    <h2>NETO RTS mensual — 2025 vs 2026 <span style="color:var(--muted);font-weight:400;font-size:12px;">— criterio: comisión cobrada</span></h2>
+    <h2>Comisiones cobradas mensual — 2025 vs 2026</h2>
     <canvas id="chartMensualTotal"></canvas>
   </div>
 
   <div class="grid2" style="margin-top:16px;">
     <div class="panel">
-      <h2>NETO RTS mensual por grupo de naviera (2026) <span style="color:var(--muted);font-weight:400;font-size:12px;">— cobrado</span></h2>
+      <h2>Cobrado mensual por grupo de naviera (2026)</h2>
       <canvas id="chartMensualGrupo2026"></canvas>
     </div>
     <div class="panel">
-      <h2>Comparación mensual por grupo (2025 vs 2026) <span style="color:var(--muted);font-weight:400;font-size:12px;">— cobrado</span></h2>
+      <h2>Comparación mensual por grupo (2025 vs 2026)</h2>
       <table id="tablaMensualGrupo">
         <thead>
           <tr><th>Mes</th><th class="num">SSC/Silversea '25</th><th class="num">SSC/Silversea '26</th><th class="num">Scenic/Emerald '25</th><th class="num">Scenic/Emerald '26</th><th class="num">Otras '25</th><th class="num">Otras '26</th></tr>
@@ -203,6 +206,36 @@
       </table>
       <p style="color:var(--muted);font-size:11px;margin-top:10px;">"Otras" 2025 = Ponant + Crystal + Dawe Yacht + MSC. "Otras" 2026 = Ponant, Crystal, Explora Journeys y Vanguard — la composición puede no ser idéntica a 2025.</p>
     </div>
+  </div>
+
+  <h2 class="section-title" style="margin-top:36px;">Reservas tomadas <span class="section-sub">— criterio: reserva · fuente: MasterSheet en vivo</span></h2>
+
+  <div class="kpis" style="grid-template-columns:1fr;">
+    <div class="card">
+      <div class="label">Reservas únicas YTD</div>
+      <div class="value" id="kpi-reservas">—</div>
+      <div class="delta" id="kpi-reservas-delta"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Reservas tomadas — serie temporal</h2>
+    <canvas id="chartReservasTomadasSerie"></canvas>
+  </div>
+
+  <div class="panel" style="margin-top:16px;">
+    <h2>Reservas tomadas por naviera</h2>
+    <canvas id="chartReservasNaviera"></canvas>
+  </div>
+
+  <div class="panel" style="margin-top:16px;">
+    <h2>Reservas tomadas — detalle por naviera</h2>
+    <table id="tablaNavieras">
+      <thead>
+        <tr><th>Naviera</th><th class="num">Reservas únicas</th><th class="num">Comisión RTS</th><th class="num">% del total</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
 </div>
@@ -236,6 +269,19 @@ const DATA_2026_COBRADO = {
   total:         [12933.026, 23967.07, 14767.34, 10634.7175, 35229.1892],
 };
 const MESES_COBRADO_DISPONIBLES = DATA_2026_COBRADO.total.length; // cantidad de meses 2026 con dato cobrado cerrado
+
+// Mismo archivo, pero desglosado por naviera individual (no por los 3 grupos de arriba) sumando todas
+// las líneas de cobro (una fila = un pasajero o ajuste cobrado) de las 5 pestañas mensuales Ene–May 2026.
+// No hay Booking # en este archivo, así que "reservas" acá = cantidad de líneas de cobro distintas
+// (puede incluir más de un pasajero por misma reserva si comparten cabina, o ajustes sin pasajero asociado).
+const DATA_2026_COBRADO_POR_NAVIERA = [
+  { naviera: 'Silversea',        reservas: 35, neto: 75104.7352 },
+  { naviera: 'Scenic',           reservas: 5,  neto: 8808.8 },
+  { naviera: 'Vanguard',         reservas: 1,  neto: 5107.1775 },
+  { naviera: 'Explora Journeys', reservas: 5,  neto: 3142.17 },
+  { naviera: 'Ponant',           reservas: 1,  neto: 2905.96 },
+  { naviera: 'Emerald',          reservas: 4,  neto: 2462.5 },
+];
 
 // Mapeo de nombres de COMPANY (tal como aparecen en la planilla) a naviera canónica
 const NAVIERA_MAP = [
@@ -319,16 +365,26 @@ async function loadData() {
 
     // índices de columnas clave (según encabezados de la planilla)
     const idx = {
-      date: 0, company: 1, booking: 2, ship: 3, netoRts: 25, // columna Z (0-based = 25)
+      date: 0, company: 1, booking: 2, ship: 3, guest1: 9, guest2: 10, netoRts: 25, // columna Z (0-based = 25)
     };
 
+    let filasSinBooking = 0;
     const parsed = rows.map(r => {
       const c = r.c;
       const get = i => (c[i] ? c[i].v : null);
+      let booking = get(idx.booking) ? String(get(idx.booking)).trim() : null;
+      if (!booking) {
+        // Fallback cuando falta el Booking # en el Sheet: arma un ID a partir de naviera + barco +
+        // pasajeros para no perder la reserva. Esto solo dedupea bien si esos campos no cambian
+        // entre actualizaciones de la misma reserva — lo ideal es que el Booking # se complete en el Sheet.
+        const parts = [get(idx.company), get(idx.ship), get(idx.guest1), get(idx.guest2)]
+          .filter(Boolean).map(s => String(s).trim().toUpperCase());
+        if (parts.length) { booking = "SYN:" + parts.join("|"); filasSinBooking++; }
+      }
       return {
         date: parseDate(get(idx.date)),
         company: get(idx.company),
-        booking: get(idx.booking) ? String(get(idx.booking)).trim() : null,
+        booking,
         ship: get(idx.ship),
         netoRts: parseEsNumber(get(idx.netoRts)),
       };
@@ -389,15 +445,7 @@ async function loadData() {
     const naviereas = Array.from(byNaviera.entries()).sort((a, b) => b[1].neto - a[1].neto);
     const netoTotalReserva = ytd.reduce((s, r) => s + r.netoRts, 0); // criterio reserva, solo para % de la tabla de desglose
 
-    // KPI 3: naviera líder
-    if (naviereas.length) {
-      const [topName, topData] = naviereas[0];
-      document.getElementById("kpi-top-naviera").textContent = topName;
-      document.getElementById("kpi-top-naviera-sub").textContent =
-        topData.count + " reservas · $ " + fmtMoney(topData.neto) + " NETO RTS";
-    }
-
-    // Tabla
+    // Tabla "Reservas tomadas — detalle por naviera" (criterio reserva)
     const tbody = document.querySelector("#tablaNavieras tbody");
     tbody.innerHTML = "";
     for (const [name, d] of naviereas) {
@@ -407,12 +455,11 @@ async function loadData() {
       tbody.appendChild(tr);
     }
 
-    // Charts
-    const labels = naviereas.map(([n]) => n);
-    const counts = naviereas.map(([, d]) => d.count);
-    const netos = naviereas.map(([, d]) => d.neto);
     const palette = ["#3aa0ff","#22d3a8","#ffb84d","#ff5d6c","#a78bfa","#34d399","#f472b6","#60a5fa","#fbbf24","#4ade80"];
 
+    // Gráfico "Reservas tomadas por naviera" (donut, criterio reserva)
+    const labels = naviereas.map(([n]) => n);
+    const counts = naviereas.map(([, d]) => d.count);
     if (chartReservas) chartReservas.destroy();
     chartReservas = new Chart(document.getElementById("chartReservasNaviera"), {
       type: "doughnut",
@@ -420,10 +467,65 @@ async function loadData() {
       options: { plugins: { legend: { position: "right", labels: { color: "#e8edf7", boxWidth: 12, font: { size: 11 } } } } }
     });
 
-    if (chartNeto) chartNeto.destroy();
-    chartNeto = new Chart(document.getElementById("chartNetoNaviera"), {
+    // Gráfico "Reservas tomadas — serie temporal" (criterio reserva, mes a mes del año en curso)
+    const monthlyReservasTomadas = Array(12).fill(0);
+    for (const r of unique) {
+      if (r.date.getFullYear() !== now.getFullYear()) continue;
+      monthlyReservasTomadas[r.date.getMonth()] += 1;
+    }
+    const lastDataMonthReserva = now.getMonth();
+    if (window._chartReservasTomadasSerie) window._chartReservasTomadasSerie.destroy();
+    window._chartReservasTomadasSerie = new Chart(document.getElementById("chartReservasTomadasSerie"), {
       type: "bar",
-      data: { labels, datasets: [{ label: "NETO RTS", data: netos, backgroundColor: "#3aa0ff", borderRadius: 6 }] },
+      data: {
+        labels: MESES.slice(0, lastDataMonthReserva + 1),
+        datasets: [{ label: "Reservas tomadas", data: monthlyReservasTomadas.slice(0, lastDataMonthReserva + 1), backgroundColor: "#3aa0ff", borderRadius: 6 }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: "#94a3c4" }, grid: { display: false } },
+          y: { ticks: { color: "#94a3c4" }, grid: { color: "#243049" }, beginAtZero: true }
+        }
+      }
+    });
+
+    // --- Bloque "Comisiones cobradas" (criterio cobrado, desglose por naviera individual) ---
+    const cobradoOrdenado = [...DATA_2026_COBRADO_POR_NAVIERA].sort((a, b) => b.reservas - a.reservas);
+    const totalReservasCobradas = DATA_2026_COBRADO_POR_NAVIERA.reduce((s, d) => s + d.reservas, 0);
+    const totalNetoCobradoNaviera = DATA_2026_COBRADO_POR_NAVIERA.reduce((s, d) => s + d.neto, 0);
+
+    // KPI: reservas cobradas únicas
+    document.getElementById("kpi-reservas-cobradas").textContent = totalReservasCobradas.toLocaleString("es-AR");
+    document.getElementById("kpi-reservas-cobradas-sub").textContent = "Ene–" + MESES[MESES_COBRADO_DISPONIBLES - 1] + " 2026 · sin Booking # en este archivo (cada línea de cobro cuenta como 1)";
+
+    // KPI: naviera líder de reservas cobradas
+    if (cobradoOrdenado.length) {
+      const top = cobradoOrdenado[0];
+      document.getElementById("kpi-top-naviera-cobrado").textContent = top.naviera;
+      document.getElementById("kpi-top-naviera-cobrado-sub").textContent = top.reservas + " reservas · $ " + fmtMoney(top.neto) + " cobrado";
+    }
+
+    // Gráfico "Reservas cobradas por naviera" (donut)
+    if (window._chartReservasCobradasNaviera) window._chartReservasCobradasNaviera.destroy();
+    window._chartReservasCobradasNaviera = new Chart(document.getElementById("chartReservasCobradasNaviera"), {
+      type: "doughnut",
+      data: {
+        labels: cobradoOrdenado.map(d => d.naviera),
+        datasets: [{ data: cobradoOrdenado.map(d => d.reservas), backgroundColor: palette, borderColor: "#0b1220", borderWidth: 2 }]
+      },
+      options: { plugins: { legend: { position: "right", labels: { color: "#e8edf7", boxWidth: 12, font: { size: 11 } } } } }
+    });
+
+    // Gráfico "Neto cobrado por naviera" (barras laterales, ordenado por monto)
+    const cobradoPorNeto = [...DATA_2026_COBRADO_POR_NAVIERA].sort((a, b) => b.neto - a.neto);
+    if (window._chartNetoCobradoNaviera) window._chartNetoCobradoNaviera.destroy();
+    window._chartNetoCobradoNaviera = new Chart(document.getElementById("chartNetoCobradoNaviera"), {
+      type: "bar",
+      data: {
+        labels: cobradoPorNeto.map(d => d.naviera),
+        datasets: [{ label: "Neto cobrado", data: cobradoPorNeto.map(d => d.neto), backgroundColor: "#3aa0ff", borderRadius: 6 }]
+      },
       options: {
         indexAxis: "y",
         plugins: { legend: { display: false } },
@@ -433,6 +535,16 @@ async function loadData() {
         }
       }
     });
+
+    // Tabla "Desglose de comisiones cobradas por naviera"
+    const tbodyCobrado = document.querySelector("#tablaCobradoNavieras tbody");
+    tbodyCobrado.innerHTML = "";
+    for (const d of cobradoPorNeto) {
+      const pct = totalNetoCobradoNaviera ? (d.neto / totalNetoCobradoNaviera) * 100 : 0;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${d.naviera}</td><td class="num">$ ${fmtMoney(d.neto)}</td><td class="num">${d.reservas}</td><td class="num">${pct.toFixed(1)}%</td>`;
+      tbodyCobrado.appendChild(tr);
+    }
 
     // --- Comparación mensual 2025 vs 2026 (criterio: comisión COBRADA, ambos años) ---
     // 2026 sale de DATA_2026_COBRADO (Excel "SSC- Comi Claudia 2026.xlsx", columna J por pestaña mensual),
