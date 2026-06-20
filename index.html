@@ -243,7 +243,7 @@
   <div class="panel">
     <table id="tablaAgencias">
       <thead>
-        <tr><th>Agencia</th><th class="num">Ventas únicas</th><th class="num">Neto agencia</th><th class="num">Neto RTS</th></tr>
+        <tr><th>Agencia</th><th class="num">Ventas únicas</th><th class="num">Neto agencia</th><th class="num">Neto RTS</th><th class="num">% participación</th></tr>
       </thead>
       <tbody></tbody>
     </table>
@@ -627,11 +627,13 @@ async function loadData() {
       o.netoRts += r.netoRts;
     }
     const agencias = Array.from(byAgencia.entries()).sort((a, b) => b[1].count - a[1].count);
+    const netoRtsTotalAgencias = agencias.reduce((s, [, d]) => s + d.netoRts, 0); // facturación neta total (suma de Neto RTS de todas las agencias)
     const tbodyAgencias = document.querySelector("#tablaAgencias tbody");
     tbodyAgencias.innerHTML = "";
     for (const [name, d] of agencias) {
+      const pct = netoRtsTotalAgencias ? (d.netoRts / netoRtsTotalAgencias) * 100 : 0;
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${name}</td><td class="num">${d.count}</td><td class="num">$ ${fmtMoney(d.comisionAgencia)}</td><td class="num">$ ${fmtMoney(d.netoRts)}</td>`;
+      tr.innerHTML = `<td>${name}</td><td class="num">${d.count}</td><td class="num">$ ${fmtMoney(d.comisionAgencia)}</td><td class="num">$ ${fmtMoney(d.netoRts)}</td><td class="num">${pct.toFixed(1)}%</td>`;
       tbodyAgencias.appendChild(tr);
     }
 
