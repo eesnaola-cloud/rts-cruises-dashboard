@@ -210,11 +210,21 @@
 
   <h2 class="section-title" style="margin-top:36px;">Reservas tomadas <span class="section-sub">— criterio: reserva · fuente: MasterSheet en vivo</span></h2>
 
-  <div class="kpis" style="grid-template-columns:1fr;">
+  <div class="kpis" style="grid-template-columns:repeat(3,1fr);">
     <div class="card">
       <div class="label">Reservas únicas YTD</div>
       <div class="value" id="kpi-reservas">—</div>
       <div class="delta" id="kpi-reservas-delta"></div>
+    </div>
+    <div class="card">
+      <div class="label">RTS directo</div>
+      <div class="value" id="kpi-reservas-directo">—</div>
+      <div class="delta" style="color:var(--muted);">sin agencia en MasterSheet</div>
+    </div>
+    <div class="card">
+      <div class="label">Agencias</div>
+      <div class="value" id="kpi-reservas-agencias">—</div>
+      <div class="delta" style="color:var(--muted);">con agencia en MasterSheet</div>
     </div>
   </div>
 
@@ -418,8 +428,12 @@ async function loadData() {
     const yearStart = new Date(now.getFullYear(), 0, 1);
     const ytd = unique.filter(r => r.date >= yearStart && r.date <= now);
 
-    // KPI 1: reservas únicas YTD
+    // KPI 1: reservas únicas YTD + desglose directo vs agencias
     document.getElementById("kpi-reservas").textContent = ytd.length.toLocaleString("es-AR");
+    const ytdDirecto = ytd.filter(r => !r.agencia || String(r.agencia).trim() === "");
+    const ytdAgencias = ytd.filter(r => r.agencia && String(r.agencia).trim() !== "");
+    document.getElementById("kpi-reservas-directo").textContent = ytdDirecto.length.toLocaleString("es-AR");
+    document.getElementById("kpi-reservas-agencias").textContent = ytdAgencias.length.toLocaleString("es-AR");
 
     // KPI 2: NETO RTS cobrado YTD — criterio "comisión cobrada", NO el de reserva del Sheet.
     // Se calcula 100% desde los Excel de cierre mensual (DATA_2026_COBRADO), hasta el último mes cerrado.
