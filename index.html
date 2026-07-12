@@ -281,27 +281,28 @@ const DATA_2025 = {
 };
 
 // "SSC- Comi Claudia 2026.xlsx" — columna J ("Neto RTS") de cada fila "Total [naviera]" por pestaña mensual.
-// Solo están cargados los meses con pestaña cerrada en el archivo (Ene–May 2026). Cuando llegue un mes
+// Solo están cargados los meses con pestaña cerrada en el archivo (Ene–Jun 2026). Cuando llegue un mes
 // nuevo, agregar su valor al final de cada array (ssc, scenicEmerald, otras, total) en este mismo orden.
 const DATA_2026_COBRADO = {
-  ssc:           [11025.026, 18096.1,  11617.84, 4014.54,   30351.2292],
-  scenicEmerald: [1908,      3632.8,   3149.5,   1513,      1068],
-  otras:         [0,         2238.17,  0,        5107.1775, 3809.96],
-  total:         [12933.026, 23967.07, 14767.34, 10634.7175, 35229.1892],
+  ssc:           [11025.026, 18096.1,  11617.84, 4014.54,   30351.2292, 55835.06],
+  scenicEmerald: [1908,      3632.8,   3149.5,   1513,      1068,       912.8],
+  otras:         [0,         2238.17,  0,        5107.1775, 3809.96,    2195.2],
+  total:         [12933.026, 23967.07, 14767.34, 10634.7175, 35229.1892, 58943.06],
 };
 const MESES_COBRADO_DISPONIBLES = DATA_2026_COBRADO.total.length; // cantidad de meses 2026 con dato cobrado cerrado
 
 // Mismo archivo, pero desglosado por naviera individual (no por los 3 grupos de arriba) sumando todas
-// las líneas de cobro (una fila = un pasajero o ajuste cobrado) de las 5 pestañas mensuales Ene–May 2026.
+// las líneas de cobro (una fila = un pasajero o ajuste cobrado) de las 6 pestañas mensuales Ene–Jun 2026.
 // No hay Booking # en este archivo, así que "reservas" acá = cantidad de líneas de cobro distintas
 // (puede incluir más de un pasajero por misma reserva si comparten cabina, o ajustes sin pasajero asociado).
 const DATA_2026_COBRADO_POR_NAVIERA = [
-  { naviera: 'Silversea',        reservas: 35, neto: 75104.7352 },
+  { naviera: 'Silversea',        reservas: 43, neto: 130939.7952 },
   { naviera: 'Scenic',           reservas: 5,  neto: 8808.8 },
   { naviera: 'Vanguard',         reservas: 1,  neto: 5107.1775 },
   { naviera: 'Explora Journeys', reservas: 5,  neto: 3142.17 },
   { naviera: 'Ponant',           reservas: 1,  neto: 2905.96 },
-  { naviera: 'Emerald',          reservas: 4,  neto: 2462.5 },
+  { naviera: 'Crystal',          reservas: 1,  neto: 2195.2 },
+  { naviera: 'Emerald',          reservas: 5,  neto: 3375.3 },
 ];
 
 // Mapeo de nombres de COMPANY (tal como aparecen en la planilla) a naviera canónica
