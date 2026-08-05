@@ -372,14 +372,28 @@ function hideError() {
 
 let chartReservas, chartNeto;
 
-async function loadData() {
+function loadData() {
   document.getElementById("status").textContent = "cargando…";
   hideError();
+  return new Promise((resolve, reject) => {
+    const cbName = "_gvizCb_" + Date.now();
+    const script = document.createElement("script");
+    const timeout = setTimeout(() => {
+      delete window[cbName];
+      script.remove();
+      reject(new Error("timeout"));
+    }, 15000);
+    window[cbName] = function(json) {
+      clearTimeout(timeout);
+      delete window[cbName];
+      script.remove();
+      resolve(json);
+    };
+    script.src = GVIZ_URL + "&callback=" + cbName + "&t=" + Date.now();
+    script.onerror = () => { clearTimeout(timeout); delete window[cbName]; script.remove(); reject(new Error("script error")); };
+    document.head.appendChild(script);
+  }).then(json => {
   try {
-    const res = await fetch(GVIZ_URL, { cache: "no-store" });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const text = await res.text();
-    const json = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
     const cols = json.table.cols.map(c => c.label || c.id);
     const rows = json.table.rows;
 
@@ -650,16 +664,25 @@ async function loadData() {
       tbodyAgencias.appendChild(tr);
     }
 
-    document.getElementById("status").textContent = "actualizado " + new Date().toLocaleString("es-AR");
+    document.getElementById(“status”).textContent = “actualizado “ + new Date().toLocaleString(“es-AR”);
   } catch (err) {
     console.error(err);
     showError(
-      "No se pudo cargar la planilla. Verificá que el Google Sheet esté compartido como " +
-      "<b>“Cualquier persona con el enlace puede ver”</b> (Compartir → Acceso general). " +
-      "<br>Detalle técnico: " + err.message
+      “No se pudo cargar la planilla. Verificá que el Google Sheet esté compartido como “ +
+      “<b>”Cualquier persona con el enlace puede ver”</b> (Compartir → Acceso general). “ +
+      “<br>Detalle técnico: “ + err.message
     );
-    document.getElementById("status").textContent = "error al cargar";
+    document.getElementById(“status”).textContent = “error al cargar”;
   }
+  }).catch(err => {
+    console.error(err);
+    showError(
+      “No se pudo cargar la planilla. Verificá que el Google Sheet esté compartido como “ +
+      “<b>”Cualquier persona con el enlace puede ver”</b> (Compartir → Acceso general). “ +
+      “<br>Detalle técnico: “ + err.message
+    );
+    document.getElementById(“status”).textContent = “error al cargar”;
+  });
 }
 
 loadData();
