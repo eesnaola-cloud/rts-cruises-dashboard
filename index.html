@@ -372,6 +372,109 @@ function hideError() {
 
 let chartReservas, chartNeto;
 
+const palette = ["#3aa0ff","#22d3a8","#ffb84d","#ff5d6c","#a78bfa","#34d399","#f472b6","#60a5fa","#fbbf24","#4ade80"];
+
+function renderCobrado() {
+  const cobradoCutoff = MESES_COBRADO_DISPONIBLES;
+  const netoCobradoTotal = DATA_2026_COBRADO.total.slice(0, cobradoCutoff).reduce((s, v) => s + v, 0);
+  document.getElementById("kpi-neto").textContent = "$ " + fmtMoney(netoCobradoTotal);
+  document.getElementById("kpi-neto-corte").textContent = "(Ene–" + MESES[cobradoCutoff - 1] + " 2026)";
+
+  const lastYearInput = document.getElementById("lastYearNeto");
+  const autoLastYear = DATA_2025.total.slice(0, cobradoCutoff).reduce((s, v) => s + v, 0);
+  const savedOverride = localStorage.getItem("rts_neto_anio_pasado_override");
+  if (savedOverride) lastYearInput.value = savedOverride;
+  else { lastYearInput.value = Math.round(autoLastYear); }
+  function updateDelta() {
+    const ly = parseFloat(lastYearInput.value);
+    const deltaEl = document.getElementById("kpi-neto-delta");
+    if (!ly || isNaN(ly)) { deltaEl.textContent = ""; return; }
+    localStorage.setItem("rts_neto_anio_pasado_override", lastYearInput.value);
+    const diff = netoCobradoTotal - ly;
+    const pct = (diff / ly) * 100;
+    deltaEl.className = "delta " + (diff >= 0 ? "up" : "down");
+    deltaEl.textContent = (diff >= 0 ? "▲ " : "▼ ") + Math.abs(pct).toFixed(1) + "% vs año pasado ($ " + fmtMoney(ly) + ")";
+  }
+  lastYearInput.oninput = updateDelta;
+  updateDelta();
+
+  const cobradoOrdenado = [...DATA_2026_COBRADO_POR_NAVIERA].sort((a, b) => b.reservas - a.reservas);
+  const totalReservasCobradas = DATA_2026_COBRADO_POR_NAVIERA.reduce((s, d) => s + d.reservas, 0);
+  const totalNetoCobradoNaviera = DATA_2026_COBRADO_POR_NAVIERA.reduce((s, d) => s + d.neto, 0);
+
+  document.getElementById("kpi-reservas-cobradas").textContent = totalReservasCobradas.toLocaleString("es-AR");
+  document.getElementById("kpi-reservas-cobradas-sub").textContent = "Ene–" + MESES[cobradoCutoff - 1] + " 2026 · sin Booking # en este archivo (cada línea de cobro cuenta como 1)";
+
+  if (cobradoOrdenado.length) {
+    const top = cobradoOrdenado[0];
+    document.getElementById("kpi-top-naviera-cobrado").textContent = top.naviera;
+    document.getElementById("kpi-top-naviera-cobrado-sub").textContent = top.reservas + " reservas · $ " + fmtMoney(top.neto) + " cobrado";
+  }
+
+  if (window._chartReservasCobradasNaviera) window._chartReservasCobradasNaviera.destroy();
+  window._chartReservasCobradasNaviera = new Chart(document.getElementById("chartReservasCobradasNaviera"), {
+    type: "doughnut",
+    data: { labels: cobradoOrdenado.map(d => d.naviera), datasets: [{ data: cobradoOrdenado.map(d => d.reservas), backgroundColor: palette, borderColor: "#0b1220", borderWidth: 2 }] },
+    options: { plugins: { legend: { position: "right", labels: { color: "#e8edf7", boxWidth: 12, font: { size: 11 } } } } }
+  });
+
+  const cobradoPorNeto = [...DATA_2026_COBRADO_POR_NAVIERA].sort((a, b) => b.neto - a.neto);
+  if (window._chartNetoCobradoNaviera) window._chartNetoCobradoNaviera.destroy();
+  window._chartNetoCobradoNaviera = new Chart(document.getElementById("chartNetoCobradoNaviera"), {
+    type: "bar",
+    data: { labels: cobradoPorNeto.map(d => d.naviera), datasets: [{ label: "Neto cobrado", data: cobradoPorNeto.map(d => d.neto), backgroundColor: "#3aa0ff", borderRadius: 6 }] },
+    options: { indexAxis: "y", plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#94a3c4" }, grid: { color: "#243049" } }, y: { ticks: { color: "#e8edf7" }, grid: { display: false } } } }
+  });
+
+  const tbodyCobrado = document.querySelector("#tablaCobradoNavieras tbody");
+  tbodyCobrado.innerHTML = "";
+  for (const d of cobradoPorNeto) {
+    const pct = totalNetoCobradoNaviera ? (d.neto / totalNetoCobradoNaviera) * 100 : 0;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${d.naviera}</td><td class="num">$ ${fmtMoney(d.neto)}</td><td class="num">${d.reservas}</td><td class="num">${pct.toFixed(1)}%</td>`;
+    tbodyCobrado.appendChild(tr);
+  }
+
+  const totalChartLabels = MESES.slice(0, cobradoCutoff);
+  if (window._chartMensualTotal) window._chartMensualTotal.destroy();
+  window._chartMensualTotal = new Chart(document.getElementById("chartMensualTotal"), {
+    type: "line",
+    data: {
+      labels: MESES,
+      datasets: [
+        { label: "2025", data: DATA_2025.total, borderColor: "#94a3c4", backgroundColor: "transparent", borderDash: [5, 4], tension: .3 },
+        { label: "2026", data: [...DATA_2026_COBRADO.total, ...Array(12 - cobradoCutoff).fill(null)], borderColor: "#3aa0ff", backgroundColor: "rgba(58,160,255,.15)", fill: true, tension: .3 }
+      ]
+    },
+    options: { plugins: { legend: { labels: { color: "#e8edf7" } } }, scales: { x: { ticks: { color: "#94a3c4" }, grid: { color: "#243049" } }, y: { ticks: { color: "#94a3c4" }, grid: { color: "#243049" } } } }
+  });
+
+  if (window._chartMensualGrupo2026) window._chartMensualGrupo2026.destroy();
+  window._chartMensualGrupo2026 = new Chart(document.getElementById("chartMensualGrupo2026"), {
+    type: "bar",
+    data: {
+      labels: totalChartLabels,
+      datasets: [
+        { label: "SSC/Silversea", data: DATA_2026_COBRADO.ssc, backgroundColor: "#3aa0ff" },
+        { label: "Scenic/Emerald", data: DATA_2026_COBRADO.scenicEmerald, backgroundColor: "#22d3a8" },
+        { label: "Otras", data: DATA_2026_COBRADO.otras, backgroundColor: "#ffb84d" },
+      ]
+    },
+    options: { plugins: { legend: { labels: { color: "#e8edf7" } } }, scales: { x: { stacked: true, ticks: { color: "#94a3c4" }, grid: { display: false } }, y: { stacked: true, ticks: { color: "#94a3c4" }, grid: { color: "#243049" } } } }
+  });
+
+  const tbodyMensual = document.querySelector("#tablaMensualGrupo tbody");
+  tbodyMensual.innerHTML = "";
+  for (let m = 0; m < cobradoCutoff; m++) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${MESES[m]}</td>
+      <td class="num">$ ${fmtMoney(DATA_2025.ssc[m])}</td><td class="num">$ ${fmtMoney(DATA_2026_COBRADO.ssc[m])}</td>
+      <td class="num">$ ${fmtMoney(DATA_2025.scenicEmerald[m])}</td><td class="num">$ ${fmtMoney(DATA_2026_COBRADO.scenicEmerald[m])}</td>
+      <td class="num">$ ${fmtMoney(DATA_2025.otras[m])}</td><td class="num">$ ${fmtMoney(DATA_2026_COBRADO.otras[m])}</td>`;
+    tbodyMensual.appendChild(tr);
+  }
+}
+
 async function loadData() {
   document.getElementById("status").textContent = "cargando…";
   hideError();
@@ -434,33 +537,6 @@ async function loadData() {
     document.getElementById("kpi-reservas-directo").textContent = ytdDirecto.length.toLocaleString("es-AR");
     document.getElementById("kpi-reservas-agencias").textContent = ytdAgencias.length.toLocaleString("es-AR");
 
-    // KPI 2: NETO RTS cobrado YTD — criterio "comisión cobrada", NO el de reserva del Sheet.
-    // Se calcula 100% desde los Excel de cierre mensual (DATA_2026_COBRADO), hasta el último mes cerrado.
-    const cobradoCutoff = MESES_COBRADO_DISPONIBLES; // cantidad de meses 2026 cargados
-    const netoCobradoTotal = DATA_2026_COBRADO.total.slice(0, cobradoCutoff).reduce((s, v) => s + v, 0);
-    document.getElementById("kpi-neto").textContent = "$ " + fmtMoney(netoCobradoTotal);
-    document.getElementById("kpi-neto-corte").textContent = "(Ene–" + MESES[cobradoCutoff - 1] + " 2026)";
-
-    // Comparación año pasado: se autocompleta con el acumulado 2025 cobrado hasta el mismo corte de mes,
-    // pero el usuario puede sobreescribirlo a mano si tiene un valor más preciso.
-    const lastYearInput = document.getElementById("lastYearNeto");
-    const autoLastYear = DATA_2025.total.slice(0, cobradoCutoff).reduce((s, v) => s + v, 0);
-    const savedOverride = localStorage.getItem("rts_neto_anio_pasado_override");
-    if (savedOverride) lastYearInput.value = savedOverride;
-    else { lastYearInput.value = Math.round(autoLastYear); lastYearInput.placeholder = "Auto (Excel 2025): " + fmtMoney(autoLastYear); }
-    function updateDelta() {
-      const ly = parseFloat(lastYearInput.value);
-      const deltaEl = document.getElementById("kpi-neto-delta");
-      if (!ly || isNaN(ly)) { deltaEl.textContent = ""; return; }
-      localStorage.setItem("rts_neto_anio_pasado_override", lastYearInput.value);
-      const diff = netoCobradoTotal - ly;
-      const pct = (diff / ly) * 100;
-      deltaEl.className = "delta " + (diff >= 0 ? "up" : "down");
-      deltaEl.textContent = (diff >= 0 ? "▲ " : "▼ ") + Math.abs(pct).toFixed(1) + "% vs año pasado ($ " + fmtMoney(ly) + ")";
-    }
-    lastYearInput.oninput = updateDelta;
-    updateDelta();
-
     // Agrupación por naviera
     const byNaviera = new Map();
     for (const r of ytd) {
@@ -483,7 +559,7 @@ async function loadData() {
       tbody.appendChild(tr);
     }
 
-    const palette = ["#3aa0ff","#22d3a8","#ffb84d","#ff5d6c","#a78bfa","#34d399","#f472b6","#60a5fa","#fbbf24","#4ade80"];
+
 
     // Gráfico "Reservas tomadas por naviera" (donut, criterio reserva)
     const labels = naviereas.map(([n]) => n);
@@ -518,117 +594,6 @@ async function loadData() {
       }
     });
 
-    // --- Bloque "Comisiones cobradas" (criterio cobrado, desglose por naviera individual) ---
-    const cobradoOrdenado = [...DATA_2026_COBRADO_POR_NAVIERA].sort((a, b) => b.reservas - a.reservas);
-    const totalReservasCobradas = DATA_2026_COBRADO_POR_NAVIERA.reduce((s, d) => s + d.reservas, 0);
-    const totalNetoCobradoNaviera = DATA_2026_COBRADO_POR_NAVIERA.reduce((s, d) => s + d.neto, 0);
-
-    // KPI: reservas cobradas únicas
-    document.getElementById("kpi-reservas-cobradas").textContent = totalReservasCobradas.toLocaleString("es-AR");
-    document.getElementById("kpi-reservas-cobradas-sub").textContent = "Ene–" + MESES[MESES_COBRADO_DISPONIBLES - 1] + " 2026 · sin Booking # en este archivo (cada línea de cobro cuenta como 1)";
-
-    // KPI: naviera líder de reservas cobradas
-    if (cobradoOrdenado.length) {
-      const top = cobradoOrdenado[0];
-      document.getElementById("kpi-top-naviera-cobrado").textContent = top.naviera;
-      document.getElementById("kpi-top-naviera-cobrado-sub").textContent = top.reservas + " reservas · $ " + fmtMoney(top.neto) + " cobrado";
-    }
-
-    // Gráfico "Reservas cobradas por naviera" (donut)
-    if (window._chartReservasCobradasNaviera) window._chartReservasCobradasNaviera.destroy();
-    window._chartReservasCobradasNaviera = new Chart(document.getElementById("chartReservasCobradasNaviera"), {
-      type: "doughnut",
-      data: {
-        labels: cobradoOrdenado.map(d => d.naviera),
-        datasets: [{ data: cobradoOrdenado.map(d => d.reservas), backgroundColor: palette, borderColor: "#0b1220", borderWidth: 2 }]
-      },
-      options: { plugins: { legend: { position: "right", labels: { color: "#e8edf7", boxWidth: 12, font: { size: 11 } } } } }
-    });
-
-    // Gráfico "Neto cobrado por naviera" (barras laterales, ordenado por monto)
-    const cobradoPorNeto = [...DATA_2026_COBRADO_POR_NAVIERA].sort((a, b) => b.neto - a.neto);
-    if (window._chartNetoCobradoNaviera) window._chartNetoCobradoNaviera.destroy();
-    window._chartNetoCobradoNaviera = new Chart(document.getElementById("chartNetoCobradoNaviera"), {
-      type: "bar",
-      data: {
-        labels: cobradoPorNeto.map(d => d.naviera),
-        datasets: [{ label: "Neto cobrado", data: cobradoPorNeto.map(d => d.neto), backgroundColor: "#3aa0ff", borderRadius: 6 }]
-      },
-      options: {
-        indexAxis: "y",
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: "#94a3c4" }, grid: { color: "#243049" } },
-          y: { ticks: { color: "#e8edf7" }, grid: { display: false } }
-        }
-      }
-    });
-
-    // Tabla "Desglose de comisiones cobradas por naviera"
-    const tbodyCobrado = document.querySelector("#tablaCobradoNavieras tbody");
-    tbodyCobrado.innerHTML = "";
-    for (const d of cobradoPorNeto) {
-      const pct = totalNetoCobradoNaviera ? (d.neto / totalNetoCobradoNaviera) * 100 : 0;
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${d.naviera}</td><td class="num">$ ${fmtMoney(d.neto)}</td><td class="num">${d.reservas}</td><td class="num">${pct.toFixed(1)}%</td>`;
-      tbodyCobrado.appendChild(tr);
-    }
-
-    // --- Comparación mensual 2025 vs 2026 (criterio: comisión COBRADA, ambos años) ---
-    // 2026 sale de DATA_2026_COBRADO (Excel "SSC- Comi Claudia 2026.xlsx", columna J por pestaña mensual),
-    // NO se recalcula desde el Sheet de reservas para no mezclar criterios.
-    const totalChartLabels = MESES.slice(0, MESES_COBRADO_DISPONIBLES);
-
-    if (window._chartMensualTotal) window._chartMensualTotal.destroy();
-    window._chartMensualTotal = new Chart(document.getElementById("chartMensualTotal"), {
-      type: "line",
-      data: {
-        labels: MESES,
-        datasets: [
-          { label: "2025", data: DATA_2025.total, borderColor: "#94a3c4", backgroundColor: "transparent", borderDash: [5, 4], tension: .3 },
-          { label: "2026", data: DATA_2026_COBRADO.total.map((v, i) => i < MESES_COBRADO_DISPONIBLES ? v : null).concat(Array(12 - MESES_COBRADO_DISPONIBLES).fill(null)), borderColor: "#3aa0ff", backgroundColor: "rgba(58,160,255,.15)", fill: true, tension: .3 }
-        ]
-      },
-      options: {
-        plugins: { legend: { labels: { color: "#e8edf7" } } },
-        scales: {
-          x: { ticks: { color: "#94a3c4" }, grid: { color: "#243049" } },
-          y: { ticks: { color: "#94a3c4" }, grid: { color: "#243049" } }
-        }
-      }
-    });
-
-    if (window._chartMensualGrupo2026) window._chartMensualGrupo2026.destroy();
-    window._chartMensualGrupo2026 = new Chart(document.getElementById("chartMensualGrupo2026"), {
-      type: "bar",
-      data: {
-        labels: totalChartLabels,
-        datasets: [
-          { label: "SSC/Silversea", data: DATA_2026_COBRADO.ssc, backgroundColor: "#3aa0ff" },
-          { label: "Scenic/Emerald", data: DATA_2026_COBRADO.scenicEmerald, backgroundColor: "#22d3a8" },
-          { label: "Otras", data: DATA_2026_COBRADO.otras, backgroundColor: "#ffb84d" },
-        ]
-      },
-      options: {
-        plugins: { legend: { labels: { color: "#e8edf7" } } },
-        scales: {
-          x: { stacked: true, ticks: { color: "#94a3c4" }, grid: { display: false } },
-          y: { stacked: true, ticks: { color: "#94a3c4" }, grid: { color: "#243049" } }
-        }
-      }
-    });
-
-    const tbodyMensual = document.querySelector("#tablaMensualGrupo tbody");
-    tbodyMensual.innerHTML = "";
-    for (let m = 0; m < MESES_COBRADO_DISPONIBLES; m++) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${MESES[m]}</td>
-        <td class="num">$ ${fmtMoney(DATA_2025.ssc[m])}</td><td class="num">$ ${fmtMoney(DATA_2026_COBRADO.ssc[m])}</td>
-        <td class="num">$ ${fmtMoney(DATA_2025.scenicEmerald[m])}</td><td class="num">$ ${fmtMoney(DATA_2026_COBRADO.scenicEmerald[m])}</td>
-        <td class="num">$ ${fmtMoney(DATA_2025.otras[m])}</td><td class="num">$ ${fmtMoney(DATA_2026_COBRADO.otras[m])}</td>`;
-      tbodyMensual.appendChild(tr);
-    }
-
     // Ranking de agencias vendedoras (columna V "AGENCIA" del MasterSheet, criterio reserva, deduplicado por Booking #)
     const byAgencia = new Map();
     for (const r of ytd) {
@@ -662,6 +627,7 @@ async function loadData() {
   }
 }
 
+renderCobrado();
 loadData();
 </script>
 
