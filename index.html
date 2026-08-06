@@ -263,7 +263,7 @@
 
 <script>
 const SHEET_ID = "1v1XNAhn6V22RO_F872uCIj9llS1EbX59DbF24gqFqlc";
-const GVIZ_BASE = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`;
+const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
 
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
@@ -372,26 +372,14 @@ function hideError() {
 
 let chartReservas, chartNeto;
 
-function fetchGviz() {
-  return new Promise((resolve, reject) => {
-    const cbName = "_gviz_" + Date.now();
-    const script = document.createElement("script");
-    const timer = setTimeout(() => {
-      cleanup(); reject(new Error("timeout al conectar con Google Sheets"));
-    }, 15000);
-    function cleanup() { delete window[cbName]; script.remove(); clearTimeout(timer); }
-    window[cbName] = function(resp) { cleanup(); resolve(resp); };
-    script.onerror = () => { cleanup(); reject(new Error("script error")); };
-    script.src = `${GVIZ_BASE}?tqx=out:json;responseHandler:${cbName}&t=${Date.now()}`;
-    document.head.appendChild(script);
-  });
-}
-
 async function loadData() {
   document.getElementById("status").textContent = "cargando…";
   hideError();
   try {
-    const json = await fetchGviz();
+    const res = await fetch(GVIZ_URL + "&t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const text = await res.text();
+    const json = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
     const cols = json.table.cols.map(c => c.label || c.id);
     const rows = json.table.rows;
 
