@@ -284,18 +284,18 @@ const DATA_2025 = {
 // Solo están cargados los meses cerrados (Ene–Jul 2026). Cuando llegue un mes nuevo,
 // agregar su valor al final de cada array (ssc, scenicEmerald, otras, total) en este mismo orden.
 const DATA_2026_COBRADO = {
-  ssc:           [11025.026, 18096.1,  11617.84, 4014.54,   30351.2292, 55835.06, 770],
-  scenicEmerald: [1908,      3632.8,   3149.5,   1513,      1068,       912.8,    1499],
-  otras:         [0,         2238.17,  0,        5107.1775, 3809.96,    2195.2,   1293],
-  total:         [12933.026, 23967.07, 14767.34, 10634.7175, 35229.1892, 58943.06, 3562],
+  ssc:           [11025.026, 18096.1,  11617.84, 4014.54,   30351.2292, 55835.06, 770,  7018],
+  scenicEmerald: [1908,      3632.8,   3149.5,   1513,      1068,       912.8,    1499, 2126],
+  otras:         [0,         2238.17,  0,        5107.1775, 3809.96,    2195.2,   1293, 0],
+  total:         [12933.026, 23967.07, 14767.34, 10634.7175, 35229.1892, 58943.06, 3562, 9144],
 };
 const MESES_COBRADO_DISPONIBLES = DATA_2026_COBRADO.total.length; // cantidad de meses 2026 con dato cobrado cerrado
 
-// Desglosado por naviera individual, acumulado Ene–Jul 2026.
+// Desglosado por naviera individual, acumulado Ene–Ago 2026.
 // "reservas" = líneas de cobro distintas (no necesariamente reservas únicas).
 const DATA_2026_COBRADO_POR_NAVIERA = [
-  { naviera: 'Silversea',        reservas: 44, neto: 131709.7952 },
-  { naviera: 'Scenic',           reservas: 5,  neto: 8808.8 },
+  { naviera: 'Silversea',        reservas: 47, neto: 138727.7952 },
+  { naviera: 'Scenic',           reservas: 6,  neto: 10934.8 },
   { naviera: 'Vanguard',         reservas: 2,  neto: 5417.1775 },
   { naviera: 'Explora Journeys', reservas: 6,  neto: 4125.17 },
   { naviera: 'Emerald',          reservas: 7,  neto: 4874.3 },
